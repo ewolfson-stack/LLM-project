@@ -1,0 +1,342 @@
+"""Snowman word guessing game. Run with: python snowman.py"""
+
+import random
+import tkinter as tk
+from tkinter import ttk
+
+
+WORDS = [
+    "winter", "snowflake", "mittens", "blizzard", "frosty", "igloo",
+    "scarf", "penguin", "evergreen", "cocoa", "sledding", "icicle",
+    "fireplace", "snowball", "sweater", "december", "aurora", "glacier",
+    "marshmallow", "hibernate", "iceberg", "cinnamon", "flurry",
+    "toboggan", "holiday", "crystal", "northpole", "boots", "frozen",
+    "cheerful",
+]
+
+MODES = {
+    "Easy": {"guesses": 7, "seconds": 15},
+    "Normal": {"guesses": 5, "seconds": 10},
+    "Hard": {"guesses": 3, "seconds": 6},
+}
+
+INK = "#20324a"
+MUTED = "#65778d"
+BLUE = "#3178c6"
+ICE = "#eaf6ff"
+LINE = "#dce8f2"
+
+
+class SnowmanGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Snowman — Guess the Word")
+        self.root.configure(bg="#edf6fd")
+        self.root.minsize(760, 590)
+        self.root.geometry("980x700")
+
+        self.mode = tk.StringVar(value="Easy")
+        self.entry_text = tk.StringVar()
+        self.answer = ""
+        self.guessed = set()
+        self.remaining = 7
+        self.seconds_left = 15
+        self.game_over = False
+        self.timer_job = None
+        self.key_buttons = {}
+
+        self._build_ui()
+        self.new_game()
+
+    def _build_ui(self):
+        shell = tk.Frame(self.root, bg="white", padx=26, pady=24,
+                         highlightbackground="#e7eef5", highlightthickness=1)
+        shell.pack(fill="both", expand=True, padx=18, pady=18)
+        shell.columnconfigure(0, weight=13, minsize=410)
+        shell.columnconfigure(1, weight=7, minsize=245)
+        shell.rowconfigure(1, weight=1)
+
+        heading = tk.Frame(shell, bg="white")
+        heading.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 20))
+        tk.Label(heading, text="A LITTLE WINTER WORD GAME", bg="white",
+                 fg=BLUE, font=("Segoe UI", 9, "bold")).pack()
+        tk.Label(heading, text="Snowman", bg="white", fg=INK,
+                 font=("Segoe UI", 27, "bold")).pack(pady=(3, 0))
+        tk.Label(heading, text="Guess a letter or try the whole word.", bg="white",
+                 fg=MUTED, font=("Segoe UI", 10)).pack(pady=(0, 2))
+
+        play = tk.Frame(shell, bg="white")
+        play.grid(row=1, column=0, sticky="nsew", padx=(0, 22))
+        play.columnconfigure(0, weight=1)
+
+        stats = tk.Frame(play, bg="white")
+        stats.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        self.guesses_label = self._pill(stats, "Guesses left: 7")
+        self.guesses_label.pack(side="left", padx=(0, 6))
+        self.timer_label = self._pill(stats, "Time: 15s")
+        self.timer_label.pack(side="left", padx=6)
+        self.used_label = self._pill(stats, "Letters tried: —")
+        self.used_label.pack(side="left", padx=6)
+
+        self.word_frame = tk.Frame(play, bg="white", height=64)
+        self.word_frame.grid(row=1, column=0, sticky="ew", pady=(5, 12))
+        self.word_frame.grid_propagate(False)
+
+        entry_row = tk.Frame(play, bg="white")
+        entry_row.grid(row=2, column=0, sticky="ew")
+        entry_row.columnconfigure(0, weight=1)
+        self.entry = tk.Entry(entry_row, textvariable=self.entry_text,
+                              font=("Segoe UI", 12), relief="solid", bd=1,
+                              highlightthickness=1, highlightcolor=BLUE,
+                              highlightbackground=LINE)
+        self.entry.grid(row=0, column=0, sticky="ew", ipady=9, padx=(0, 8))
+        self.entry.bind("<Return>", lambda _event: self.submit_guess())
+        self.guess_button = tk.Button(entry_row, text="Guess", command=self.submit_guess,
+                                      bg=BLUE, fg="white", activebackground="#2869ad",
+                                      activeforeground="white", relief="flat",
+                                      font=("Segoe UI", 10, "bold"), padx=18, pady=10,
+                                      cursor="hand2")
+        self.guess_button.grid(row=0, column=1)
+
+        self.keyboard = tk.Frame(play, bg="white")
+        self.keyboard.grid(row=3, column=0, sticky="ew", pady=(12, 0))
+        for col in range(7):
+            self.keyboard.columnconfigure(col, weight=1, uniform="key")
+        for index, letter in enumerate("abcdefghijklmnopqrstuvwxyz"):
+            button = tk.Button(
+                self.keyboard, text=letter.upper(),
+                command=lambda ch=letter: self.guess_letter(ch),
+                bg=ICE, fg="#315a78", activebackground="#d8eefa",
+                relief="flat", font=("Segoe UI", 10, "bold"),
+                cursor="hand2", takefocus=True,
+            )
+            button.grid(row=index // 7, column=index % 7, sticky="ew", padx=3, pady=3, ipady=7)
+            self.key_buttons[letter] = button
+
+        actions = tk.Frame(play, bg="white")
+        actions.grid(row=4, column=0, sticky="ew", pady=(10, 0))
+        self.hint_button = tk.Button(actions, text="💡  Get a hint (costs 2 guesses)",
+                                     command=self.hint, bg=ICE, fg="#315a78",
+                                     relief="flat", font=("Segoe UI", 10, "bold"),
+                                     cursor="hand2", pady=9)
+        self.hint_button.pack(fill="x")
+
+        self.message = tk.Label(play, text="", bg="white", fg=MUTED,
+                                font=("Segoe UI", 10, "bold"), wraplength=440)
+        self.message.grid(row=5, column=0, sticky="ew", pady=(14, 2))
+
+        footer = tk.Frame(play, bg="white", highlightbackground=LINE, highlightthickness=1)
+        footer.grid(row=6, column=0, sticky="ew", pady=(14, 0), ipady=8, ipadx=8)
+        tk.Label(footer, text="Difficulty", bg="white", fg=MUTED,
+                 font=("Segoe UI", 9, "bold")).pack(side="left", padx=(5, 8))
+        mode_box = ttk.Combobox(footer, textvariable=self.mode, values=list(MODES),
+                                state="readonly", width=10)
+        mode_box.pack(side="left")
+        mode_box.bind("<<ComboboxSelected>>", lambda _event: self.new_game())
+        tk.Button(footer, text="New game", command=self.new_game,
+                  bg=BLUE, fg="white", activebackground="#2869ad",
+                  activeforeground="white", relief="flat",
+                  font=("Segoe UI", 9, "bold"), padx=12, pady=7,
+                  cursor="hand2").pack(side="right", padx=4)
+
+        # The snowman has its own large panel to the right of the game controls.
+        snow_panel = tk.Frame(shell, bg="#eff8fe", highlightbackground=LINE,
+                              highlightthickness=1)
+        snow_panel.grid(row=1, column=1, sticky="nsew")
+        tk.Label(snow_panel, text="MELTING SNOWMAN", bg="#eff8fe", fg="#7192a9",
+                 font=("Segoe UI", 9, "bold")).pack(pady=(20, 8))
+        self.canvas = tk.Canvas(snow_panel, bg="#eff8fe", highlightthickness=0,
+                                width=270, height=380)
+        self.canvas.pack(fill="both", expand=True, padx=10, pady=(0, 14))
+        self.canvas.bind("<Configure>", lambda _event: self.draw_snowman())
+
+    @staticmethod
+    def _pill(parent, text):
+        return tk.Label(parent, text=text, bg=ICE, fg="#36617f",
+                        font=("Segoe UI", 9, "bold"), padx=10, pady=7)
+
+    def new_game(self):
+        self._stop_timer()
+        settings = MODES[self.mode.get()]
+        self.answer = random.choice(WORDS)
+        self.guessed = set()
+        self.remaining = settings["guesses"]
+        self.seconds_left = settings["seconds"]
+        self.game_over = False
+        self.entry_text.set("")
+        self.message.configure(text="Your word is ready. Good luck!", fg=MUTED)
+        self._render()
+        self.entry.focus_set()
+        self._start_timer()
+
+    def _render(self):
+        self.guesses_label.configure(text=f"Guesses left: {self.remaining}")
+        self.timer_label.configure(text=f"Time: {self.seconds_left}s",
+                                   fg="#bd5050" if self.seconds_left <= 3 else "#36617f")
+        used = ", ".join(sorted(self.guessed).upper()) if self.guessed else "—"
+        self.used_label.configure(text=f"Letters tried: {used}")
+        for child in self.word_frame.winfo_children():
+            child.destroy()
+        for letter in self.answer:
+            shown = letter.upper() if letter in self.guessed or self.game_over else " "
+            tk.Label(self.word_frame, text=shown, bg="white", fg=INK,
+                     font=("Segoe UI", 18, "bold"), width=2,
+                     highlightthickness=0, bd=0).pack(side="left", padx=2)
+            # Draw a clear underline below each hidden character.
+            tk.Frame(self.word_frame, bg="#a9c5db", height=3).pack(side="left", fill="x", expand=True, padx=(0, 5), pady=(35, 0))
+
+        state = "disabled" if self.game_over else "normal"
+        self.entry.configure(state=state)
+        self.guess_button.configure(state=state)
+        self.hint_button.configure(state=state)
+        for letter, button in self.key_buttons.items():
+            button.configure(state="disabled" if self.game_over or letter in self.guessed else "normal")
+        self.draw_snowman()
+
+    def _melt_stage(self):
+        max_guesses = MODES[self.mode.get()]["guesses"]
+        mistakes = max_guesses - self.remaining
+        return 0 if mistakes == 0 else min(7, (mistakes * 7 + max_guesses - 1) // max_guesses)
+
+    def draw_snowman(self):
+        if not hasattr(self, "canvas"):
+            return
+        canvas = self.canvas
+        canvas.delete("all")
+        width = max(canvas.winfo_width(), 220)
+        height = max(canvas.winfo_height(), 300)
+        cx = width / 2
+        base_y = height * 0.72
+        stage = self._melt_stage()
+        # A soft snowy ground and a puddle appear as the snowman melts.
+        canvas.create_oval(cx - 100, base_y + 40, cx + 100, base_y + 58,
+                           fill="#d9edf8", outline="")
+        if stage >= 7:
+            canvas.create_oval(cx - 72, base_y + 29, cx + 72, base_y + 49,
+                               fill="#a8d8f0", outline="")
+        else:
+            snow = "#ffffff"
+            outline = "#b8d6e8"
+            if stage < 7:
+                canvas.create_oval(cx - 59, base_y - 54, cx + 59, base_y + 64,
+                                   fill=snow, outline=outline, width=2)
+            if stage < 6:
+                canvas.create_oval(cx - 45, base_y - 145, cx + 45, base_y - 55,
+                                   fill=snow, outline=outline, width=2)
+            if stage < 5:
+                canvas.create_oval(cx - 32, base_y - 211, cx + 32, base_y - 147,
+                                   fill=snow, outline=outline, width=2)
+            if stage < 2:
+                canvas.create_line(cx - 43, base_y - 130, cx - 93, base_y - 160,
+                                   cx - 112, base_y - 153, fill="#9b6843", width=5, capstyle="round")
+                canvas.create_line(cx + 43, base_y - 130, cx + 93, base_y - 160,
+                                   cx + 112, base_y - 153, fill="#9b6843", width=5, capstyle="round")
+            if stage < 1:
+                canvas.create_polygon(cx - 34, base_y - 153, cx + 34, base_y - 153,
+                                     cx + 29, base_y - 137, cx - 29, base_y - 137,
+                                     fill="#e76f51", outline="")
+                canvas.create_polygon(cx + 10, base_y - 139, cx + 31, base_y - 135,
+                                     cx + 27, base_y - 104, cx + 11, base_y - 109,
+                                     fill="#e76f51", outline="")
+            if stage < 4:
+                canvas.create_oval(cx - 14, base_y - 188, cx - 8, base_y - 182, fill=INK, outline="")
+                canvas.create_oval(cx + 8, base_y - 188, cx + 14, base_y - 182, fill=INK, outline="")
+                canvas.create_polygon(cx, base_y - 180, cx + 24, base_y - 174,
+                                      cx, base_y - 169, fill="#ef9f43", outline="")
+            if stage < 3:
+                for y in (base_y - 124, base_y - 99, base_y - 74):
+                    canvas.create_oval(cx - 4, y - 4, cx + 4, y + 4, fill="#526b80", outline="")
+
+    def guess_letter(self, letter):
+        if not self.game_over:
+            self.entry_text.set(letter)
+            self.submit_guess()
+
+    def submit_guess(self):
+        if self.game_over:
+            return
+        guess = self.entry_text.get().strip().lower()
+        self.entry_text.set("")
+        if not guess.isalpha() or not guess.isascii():
+            self._say("Enter a letter or a word using A to Z.", "#bd5050")
+            return
+        if len(guess) > 1:
+            if guess == self.answer:
+                self._finish(True, f'You got it! The word was “{self.answer}.”')
+            else:
+                self._finish(False, f'Not quite! The word was “{self.answer}.”')
+            return
+        if guess in self.guessed:
+            self._say(f"You already tried {guess.upper()}. Choose another letter.", "#bd5050")
+            return
+        self.guessed.add(guess)
+        if guess not in self.answer:
+            self.remaining -= 1
+            if self.remaining <= 0:
+                self._finish(False, f'Out of guesses! The word was “{self.answer}.”')
+                return
+            self._say(f"No {guess.upper()} this time. Keep going.", "#bd5050")
+        elif all(letter in self.guessed for letter in self.answer):
+            self._finish(True, f'You got it! The word was “{self.answer}.”')
+            return
+        else:
+            self._say(f"Nice, {guess.upper()} is in the word!", "#21805c")
+        self._render()
+        self._start_timer()
+
+    def hint(self):
+        if self.game_over:
+            return
+        if self.remaining <= 2:
+            self._say("You need at least 3 guesses left to use a hint.", "#bd5050")
+            return
+        hidden = [letter for letter in set(self.answer) if letter not in self.guessed]
+        if not hidden:
+            return
+        letter = random.choice(hidden)
+        self.guessed.add(letter)
+        self.remaining -= 2
+        if all(char in self.guessed for char in self.answer):
+            self._finish(True, f'The hint revealed the last letter! You won: “{self.answer}.”')
+            return
+        self._say(f"Hint: revealed {letter.upper()} and used 2 guesses.", MUTED)
+        self._render()
+
+    def _say(self, text, color):
+        self.message.configure(text=text, fg=color)
+
+    def _finish(self, won, text):
+        self._stop_timer()
+        self.game_over = True
+        self._render()
+        self._say(text, "#21805c" if won else "#bd5050")
+
+    def _stop_timer(self):
+        if self.timer_job is not None:
+            self.root.after_cancel(self.timer_job)
+            self.timer_job = None
+
+    def _start_timer(self):
+        self._stop_timer()
+        self.seconds_left = MODES[self.mode.get()]["seconds"]
+        self._render()
+        self.timer_job = self.root.after(1000, self._tick)
+
+    def _tick(self):
+        if self.game_over:
+            return
+        self.seconds_left -= 1
+        if self.seconds_left <= 0:
+            self.seconds_left = 0
+            self._render()
+            self._finish(False, f'Time ran out! The word was “{self.answer}.”')
+            return
+        self.timer_label.configure(text=f"Time: {self.seconds_left}s",
+                                   fg="#bd5050" if self.seconds_left <= 3 else "#36617f")
+        self.timer_job = self.root.after(1000, self._tick)
+
+
+if __name__ == "__main__":
+    window = tk.Tk()
+    SnowmanGame(window)
+    window.mainloop()
