@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snowman — Guess the Word</title>
+<style>
+:root{color-scheme:light;--ink:#20324a;--muted:#65778d;--blue:#3178c6;--ice:#eaf6ff;--line:#dce8f2;--card:#fff;--gold:#f2b84b}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(ellipse at 50% 0,#fff 0,#f1f8ff 50%,#e8f3fc 100%);display:grid;place-items:center;padding:28px 16px}.game{width:min(100%,980px);background:var(--card);border:1px solid #e7eef5;border-radius:28px;padding:34px;box-shadow:0 22px 70px #36577818;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(250px,.65fr);gap:22px 34px;align-items:start}.top{text-align:center;grid-column:1/-1}.eyebrow{text-transform:uppercase;letter-spacing:.18em;font-size:.72rem;font-weight:800;color:var(--blue)}h1{font-size:2.5rem;line-height:1;margin:9px 0 8px;letter-spacing:-.05em}.sub{margin:0;color:var(--muted)}.snow-panel{grid-column:2;grid-row:2;min-height:460px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,#f4fbff,#e7f4fc);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}.snow-panel:before,.snow-panel:after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #d8ebf7;top:18%;left:20%;opacity:.8}.snow-panel:after{width:6px;height:6px;top:30%;left:auto;right:16%}.snow-title{position:absolute;top:24px;text-transform:uppercase;letter-spacing:.15em;font-size:.72rem;font-weight:800;color:#7192a9}.snowman{font-size:4.5rem;line-height:1.1;margin:20px auto 8px;filter:drop-shadow(0 8px 5px #7baecb55);z-index:1}.play{grid-column:1;grid-row:2;min-width:0}.status{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin:8px 0 20px}.pill{background:var(--ice);border-radius:99px;padding:8px 13px;color:#36617f;font-size:.86rem;font-weight:700}.pill strong{color:var(--ink)}.word{min-height:65px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0 20px}.slot{width:34px;height:43px;border-bottom:3px solid #a9c5db;display:grid;place-items:center;font-size:1.45rem;font-weight:800;text-transform:uppercase}.controls{display:flex;gap:9px}.controls input{min-width:0;flex:1;border:1.5px solid var(--line);border-radius:13px;padding:13px 14px;font-size:1rem;outline:none;color:var(--ink)}input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #3178c61a}button,select{font:inherit}button{border:0;border-radius:13px;padding:12px 16px;font-weight:750;cursor:pointer;transition:transform .12s,filter .12s}button:hover{filter:brightness(.97);transform:translateY(-1px)}button:active{transform:translateY(0)}.primary{background:var(--blue);color:#fff}.secondary{background:#edf5fb;color:#315a78}.actions{display:flex;gap:9px;margin-top:10px}.actions button{flex:1}.message{min-height:25px;text-align:center;margin:15px 0 0;color:var(--muted);font-size:.94rem;font-weight:650}.message.good{color:#21805c}.message.bad{color:#bd5050}.bottom{border-top:1px solid var(--line);margin-top:22px;padding-top:19px;display:flex;align-items:center;justify-content:space-between;gap:12px}.bottom label{font-size:.84rem;color:var(--muted);font-weight:700}.bottom select{margin-left:7px;border:1px solid var(--line);border-radius:10px;padding:9px 30px 9px 10px;color:var(--ink);background:#fff;font-weight:650}.newgame{padding:10px 13px}.hidden{display:none!important}.note{text-align:center;color:#8a9aab;font-size:.76rem;margin:15px 0 0}@media(max-width:680px){.game{padding:24px 18px;border-radius:22px;grid-template-columns:1fr;gap:18px}.top,.play,.snow-panel{grid-column:1;grid-row:auto}.top{order:0}.play{order:1}.snow-panel{order:2;min-height:300px}.snowman svg{width:170px;height:190px}h1{font-size:2.15rem}.slot{width:28px}.controls{flex-wrap:wrap}.controls input{flex-basis:100%}.controls button{flex:1}.bottom{align-items:flex-start;flex-direction:column}.bottom select{max-width:100%}}
+</style>
+<style>.timer-urgent{color:#bd5050!important}.keyboard{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:12px;touch-action:manipulation}.keyboard button{min-height:46px;padding:8px 4px;background:#edf5fb;color:#315a78;font-size:1rem}.keyboard button:disabled{opacity:.38;cursor:default;transform:none}.keyboard button:focus-visible{outline:3px solid #3178c6;outline-offset:2px}.snowman svg{width:250px;height:285px;overflow:visible}.snow-part{transition:opacity .45s,transform .45s}.melt-puddle{opacity:0;transition:opacity .45s}.snowman[data-melt="1"] .scarf,.snowman[data-melt="2"] .arms,.snowman[data-melt="3"] .buttons,.snowman[data-melt="4"] .face,.snowman[data-melt="5"] .head,.snowman[data-melt="6"] .middle,.snowman[data-melt="7"] .bottom-ball{opacity:0;transform:translateY(12px) scale(.78);transform-origin:center}.snowman[data-melt="7"] .melt-puddle{opacity:1}@media(max-width:680px){.snowman svg{width:190px;height:215px}}@media(max-width:420px){.keyboard{gap:5px}.keyboard button{min-height:44px;padding:7px 2px}}</style>
+</head>
+<body>
+<main class="game">
+  <header class="top"><div class="eyebrow">A little winter word game</div><h1>Snowman</h1><p class="sub">Guess a letter or try the whole word.</p></header>
+  <aside class="snow-panel"><div class="snow-title">Melting snowman</div><div class="snowman" id="snowman" data-melt="0" role="img" aria-label="Snowman, not melted yet"><svg viewBox="0 0 132 150" aria-hidden="true"><ellipse class="melt-puddle" cx="66" cy="136" rx="39" ry="8" fill="#a8d8f0"/><g class="snow-part bottom-ball"><circle cx="66" cy="112" r="29" fill="#fff" stroke="#b8d6e8" stroke-width="2"/></g><g class="snow-part middle"><circle cx="66" cy="70" r="23" fill="#fff" stroke="#b8d6e8" stroke-width="2"/></g><g class="snow-part head"><circle cx="66" cy="35" r="17" fill="#fff" stroke="#b8d6e8" stroke-width="2"/></g><g class="snow-part arms" stroke="#9b6843" stroke-width="4" stroke-linecap="round"><path d="M45 67 25 55 16 57M87 67l20-12 9 2"/></g><g class="snow-part scarf"><path d="M48 52q18 10 36 0l-3 8q-15 8-30 0z" fill="#e76f51"/><path d="m73 59 9 2-2 17-8-4z" fill="#e76f51"/></g><g class="snow-part face" fill="#26374a"><circle cx="60" cy="32" r="2"/><circle cx="72" cy="32" r="2"/><path d="m66 35 12 3-12 4z" fill="#ef9f43"/></g><g class="snow-part buttons" fill="#526b80"><circle cx="66" cy="70" r="2.5"/><circle cx="66" cy="82" r="2.5"/><circle cx="66" cy="94" r="2.5"/></g></svg></div></aside>
+  <section class="play">
+  <div class="status"><span class="pill">Guesses left: <strong id="left">7</strong></span><span class="pill">Time: <strong id="timer">10</strong>s</span><span class="pill">Letters tried: <strong id="used">—</strong></span></div>
+  <div class="word" id="word" aria-label="Hidden word"></div>
+  <form class="controls" id="letterForm"><input id="letterInput" autocomplete="off" aria-label="Guess a letter" placeholder="Type a letter or word…"><button class="primary" type="submit">Guess</button></form>
+  <div class="keyboard" id="keyboard" aria-label="On-screen letter keyboard"></div>
+  <div class="actions"><button class="secondary" id="hintBtn" type="button">💡 Get a hint</button></div>
+  <p class="message" id="message" role="status" aria-live="polite">Pick a difficulty and start guessing!</p>
+  <footer class="bottom"><label for="difficulty">Difficulty<select id="difficulty"><option value="7">Easy · 7 guesses</option><option value="5">Normal · 5 guesses</option><option value="3">Hard · 3 guesses</option></select></label><button class="primary newgame" id="newBtn" type="button">New game</button></footer>
+  <p class="note">Hints reveal a letter and cost 2 guesses.</p>
+  </section>
+</main>
+<script>
+(() => {
+  const words = ['winter','snowflake','mittens','blizzard','frosty','igloo','scarf','penguin','evergreen','cocoa','sledding','icicle','fireplace','snowball','sweater','December','aurora','glacier','marshmallow','hibernate','iceberg','cinnamon','flurry','toboggan','holiday','crystal','northpole','boots','frozen','cheerful'];
+  const stages = ['☃️','⛄','☃','🌨️','❄️','💨',''];
+  const $ = id => document.getElementById(id);
+  let answer = '', guessed = new Set(), remaining = 7, over = false, secondsLeft = 15, timerId = null;
+  const timeForDifficulty = () => ({7: 15, 5: 10, 3: 6}[Number($('difficulty').value)] || 10);
+  const say = (text, kind='') => { $('message').textContent = text; $('message').className = `message ${kind}`; };
+  function render(){
+    $('left').textContent = remaining;
+    $('timer').textContent = secondsLeft;
+    $('timer').classList.toggle('timer-urgent', secondsLeft <= 3);
+    $('used').textContent = guessed.size ? [...guessed].join(', ').toUpperCase() : '—';
+    const mistakes = Number($('difficulty').value) - remaining;
+    const melt = mistakes === 0 ? 0 : Math.ceil(mistakes * 7 / Number($('difficulty').value));
+    $('snowman').dataset.melt = melt;
+    $('snowman').setAttribute('aria-label', melt === 0 ? 'Snowman, not melted yet' : `Snowman melting, stage ${melt} of 7`);
+    $('word').innerHTML = [...answer].map(ch => `<span class="slot">${guessed.has(ch) || over ? ch : '&nbsp;'}</span>`).join('');
+    $('letterInput').disabled = over;
+    $('letterForm').querySelector('button').disabled = over;
+    $('hintBtn').disabled = over;
+    document.querySelectorAll('[data-key]').forEach(button => { button.disabled = over || guessed.has(button.dataset.key); });
+    if(over) $('letterForm').querySelector('button').classList.add('secondary'); else $('letterForm').querySelector('button').classList.remove('secondary');
+  }
+  function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+  function beginTimer(){ stopTimer(); secondsLeft=timeForDifficulty(); render(); timerId=setInterval(()=>{ if(over){stopTimer();return;} secondsLeft--; $('timer').textContent=secondsLeft; $('timer').classList.toggle('timer-urgent',secondsLeft<=3); if(secondsLeft<=0){stopTimer();finish(false,`Time ran out! The word was “${answer}.”`);} },1000); }
+  function finish(won, text){ stopTimer(); over=true; render(); say(text, won?'good':'bad'); }
+  $('keyboard').innerHTML = 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => `<button type="button" data-key="${ch}" aria-label="Guess ${ch.toUpperCase()}">${ch.toUpperCase()}</button>`).join('');
+  $('keyboard').addEventListener('click', e=>{ const button=e.target.closest('[data-key]'); if(!button || over)return; $('letterInput').value=button.dataset.key; $('letterForm').requestSubmit(); });
+  function start(){ stopTimer(); answer=words[Math.floor(Math.random()*words.length)].toLowerCase(); guessed=new Set(); remaining=Number($('difficulty').value); over=false; secondsLeft=timeForDifficulty(); say('Your word is ready. Good luck!'); render(); $('letterInput').value=''; $('letterInput').focus(); beginTimer(); }
+  $('letterForm').addEventListener('submit', e=>{e.preventDefault(); if(over)return; const guess=$('letterInput').value.trim().toLowerCase(); $('letterInput').value=''; if(!/^[a-z]+$/.test(guess)){say('Enter a letter or a word using A to Z.','bad');return;} if(guess.length>1){if(guess===answer)finish(true,`You got it! The word was “${answer}.”`);else finish(false,`Not quite! The word was “${answer}.”`);return;} const ch=guess; if(guessed.has(ch)){say(`You already tried ${ch.toUpperCase()}. Choose another letter.`,'bad');return;} guessed.add(ch); if(!answer.includes(ch)){remaining--; if(remaining<=0){finish(false,`Out of guesses! The word was “${answer}.”`);return;} say(`No ${ch.toUpperCase()} this time. Keep going.`,'bad');}else{if([...answer].every(x=>guessed.has(x))){finish(true,`You got it! The word was “${answer}.”`);return;} say(`Nice, ${ch.toUpperCase()} is in the word!`,'good');} render(); $('letterInput').focus(); beginTimer();});
+  $('hintBtn').addEventListener('click',()=>{if(over)return;if(remaining<=2){say('You need at least 3 guesses left to use a hint.','bad');return;}const hidden=[...new Set([...answer].filter(ch=>!guessed.has(ch)))];if(!hidden.length)return;const ch=hidden[Math.floor(Math.random()*hidden.length)];guessed.add(ch);remaining-=2;if([...answer].every(x=>guessed.has(x))){finish(true,`The hint revealed the last letter! You won: “${answer}.”`);return;}say(`Hint: revealed ${ch.toUpperCase()} and used 2 guesses.`);render();});
+  $('newBtn').addEventListener('click',start); $('difficulty').addEventListener('change',start); start();
+})();
+</script>
+</body>
+</html>
+
+
+
